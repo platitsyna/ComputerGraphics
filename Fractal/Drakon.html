@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Drakon</title>
+
+</head>
+
+<body>
+<canvas id="paintbox" width="500" height="500"></canvas>
+
+<script>
+    var ctx=document.getElementById('paintbox').getContext('2d');
+
+    function draw(x1 , y1 , x2 , y2 , dep){
+        if(dep == 0){
+            randomColor();//изменение цвета
+            ctx.fillRect(x1 , y1 , 1 , 1);
+            ctx.fillRect(x2 , y2 , 1 , 1);
+            return;
+        }
+
+        var dx = (x2 - x1)/2;
+        var dy = (y2 - y1)/2;
+        //смещение по х и у
+        var	x_tmp = x1 + dx - dy ;
+        var y_tmp = y1 + dy + dx;
+
+
+        draw(x1 , y1 , x_tmp , y_tmp , dep - 1);
+        draw(x2 , y2 , x_tmp , y_tmp , dep - 1);
+
+    }
+    function randomColor() //Генерация случайного цвета
+    {
+        var r, g, b;
+        r = decToHex(randomNumber(256));
+        g = decToHex(randomNumber(256));
+        b = decToHex(randomNumber(256));
+        ctx.fillStyle = "#" + r + g + b;
+    }
+    function randomNumber(max)
+    {
+        return Math.floor(Math.random() * (max + 1));//Генерация случайного числа
+    }
+    function decToHex(n){ return Number(n).toString(16); }//Перевод десятичного числа в шестнадцатеричное
+    draw(250 - 128 , 200 , 250 + 128 , 200 , 16);//начало рекурсии с глубиной 16
+</script>
+</body>
+</html>
