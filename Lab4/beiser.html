@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Algorithm</title>
+</head>
+<body>
+<canvas id="canvas" onmousedown="mouseDown(event)" onmousemove="mouseMove(event)" onmouseup="mouseUp(event)" >
+<="" canvas="" width="800" height="560" style="width: 800px; height: 560px; border: 1px solid rgb(0, 0, 0);">
+<script>
+
+    var w = 800, h = 560;
+
+    var canvas = document.getElementById("canvas");
+    canvas.style.width = w;
+    canvas.style.height = h;
+    canvas.style.border = "1px solid #000000";
+    canvas.width = w;
+    canvas.height = h;
+
+    var ctx = canvas.getContext("2d");
+
+    var pts = [{x:200, y:120},
+        {x:740, y:280},
+        {x:400, y:520},
+        {x:40,  y:480}];
+    var t = 0.35;
+    var tracking = null;
+
+    function dist(a, b)
+    {
+        var dx = a.x - b.x;
+        var dy = a.y - b.y;
+        return Math.sqrt(dx*dx + dy*dy);
+    }
+
+    function mouseDown(e)
+    {
+        var p = {x:e.clientX, y:e.clientY};
+        var best = [32, null];
+        pts[4] = lerp(pts[0], pts[1], t);
+        for (var i=0; i<pts.length; i++)
+        {
+            var d = dist(p, pts[i]);
+            if (best[0] > d)
+                best = [d, i];
+        }
+        i = best[1];
+        if (i != null)
+        {
+            if (i == 4)
+            {
+                tracking = function(x, y)
+                {
+                    var dx = pts[1].x - pts[0].x;
+                    var dy = pts[1].y - pts[0].y;
+                    t = (dx * (x - pts[0].x) +
+                        dy * (y - pts[0].y)) / (dx*dx + dy*dy);
+                    if (t < 0.01) t = 0.01;
+                    if (t > 0.99) t = 0.99;
+                    repaint();
+                }
+            }
+            else
+            {
+                tracking = function(x, y)
+                {
+                    pts[i] = {x:x, y:y};
+                    repaint();
+                }
+            }
+        }
+    }
+
+    function mouseMove(e)
+    {
+        if (tracking != null)
+            tracking(e.clientX, e.clientY);
+    }
+
+    function mouseUp(e)
+    {
+        tracking = null;
+    }
+
+    function dim(a, b, h, tx)
+    {
+        var dx = b.x - a.x, dy = b.y - a.y;
+        var L = Math.sqrt(dx*dx + dy*dy);
+        dx /= L; dy /= L;
+        var nx = dy, ny = -dx;
+        var h1 = h*0.5, h2 = h*2.5, h3 = h*2, h4 = h3 + 4;
+        var aa = 5, bb = 10;
+
+        ctx.beginPath();
+        ctx.strokeStyle = 'brown';
+        ctx.lineWidth = 0.5;
+        ctx.moveTo(a.x + nx*h1, a.y + ny*h1); ctx.lineTo(a.x + nx*h2, a.y + ny*h2);
+        ctx.moveTo(b.x + nx*h1, b.y + ny*h1); ctx.lineTo(b.x + nx*h2, b.y + ny*h2);
+        ctx.moveTo(a.x + nx*h3, a.y + ny*h3); ctx.lineTo(b.x + nx*h3, b.y + ny*h3);
+        ctx.moveTo(a.x + nx*(h3+aa) + dx*bb, a.y + ny*(h3+aa) + dy*bb);
+        ctx.lineTo(a.x + nx*h3, a.y + ny*h3);
+        ctx.lineTo(a.x + nx*(h3-aa) + dx*bb, a.y + ny*(h3-aa) + dy*bb);
+        ctx.moveTo(b.x + nx*(h3+aa) - dx*bb, b.y + ny*(h3+aa) - dy*bb);
+        ctx.lineTo(b.x + nx*h3, b.y + ny*h3);
+        ctx.lineTo(b.x + nx*(h3-aa) - dx*bb, b.y + ny*(h3-aa) - dy*bb);
+        ctx.stroke();
+
+        ctx.save();
+        var tm = ctx.measureText(tx);
+        ctx.translate((a.x + b.x)/2 + nx*h4 - tm.width/2*dx,
+            (a.y + b.y)/2 + ny*h4 - tm.width/2*dy);
+        ctx.rotate(Math.atan2(dy, dx));
+        ctx.fillStyle = "#000000";
+        ctx.fillText(tx, 0, 0);
+        ctx.restore();
+    }
+
+    function lerp(a, b, t)
+    {
+        var s = 1 - t;
+        return {x:a.x*s + b.x*t,
+            y:a.y*s + b.y*t};
+    }
+
+    function dot(p, name)
+    {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 8, 0, 2*Math.PI, true);
+        ctx.fill();
+        if (name)
+        {
+            ctx.fillText(name, p.x + 12, p.y + 8);
+        }
+    }
+
+    function line(a, b)
+    {
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+    }
+
+    function circle(p)
+    {
+        ctx.fillStyle = "blue";
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 16, 0, 2*Math.PI, true);
+        ctx.fill();
+    }
+
+    function repaint()
+    {
+        var p0 = pts[0], p1 = pts[1], p2 = pts[2], p3 = pts[3];
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, w, h);
+        ctx.font = "25px sans-serif";
+        ctx.fontWeight = "bold";
+
+        var p01 = lerp(p0, p1, t);
+        var p12 = lerp(p1, p2, t);
+        var p23 = lerp(p2, p3, t);
+        var p012 = lerp(p01, p12, t);
+        var p123 = lerp(p12, p23, t);
+        var p0123 = lerp(p012, p123, t);
+
+        circle(p0); circle(p1); circle(p2); circle(p3); circle(p01);
+
+        ctx.strokeStyle = "black";
+        line(p0, p1); line(p1, p2); line(p2, p3);
+        ctx.strokeStyle = "grey";
+        line(p01, p12); line(p12, p23); line(p012, p123);
+        ctx.strokeStyle = "red";
+        ctx.beginPath();
+        ctx.lineWidth = 2.0;
+        ctx.moveTo(p0.x, p0.y);
+        ctx.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+        ctx.stroke();
+
+        dim(p0, p01, 20, t.toFixed(2) + " |A-B|");
+        dim(p01, p1, 20, (1 - t).toFixed(2) + " |A-B|");
+
+        ctx.shadowColor = "black";
+        ctx.shadowOffsetX = 1;
+        ctx.shadowOffsetY = 1;
+        ctx.shadowBlur = 1;
+
+        ctx.fillStyle = "red";
+        dot(p0, "A"); dot(p1, "B"); dot(p2, "C"); dot(p3, "D");
+        ctx.fillStyle = "blue";
+        dot(p01, "AB"); dot(p12, "BC"); dot(p23, "CD");
+        ctx.fillStyle = "yellow";
+        dot(p012, "ABC"); dot(p123, "BCD");
+        ctx.fillStyle = "blue";
+        dot(p0123, "ABCD");
+
+        ctx.shadowColor = "green";
+    }
+
+    repaint();
+
+</script>
+
+
+</canvas>
+</body>
+</html>
