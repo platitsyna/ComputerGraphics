@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Алгоритм Брезенхама</title>
+    <style>
+      body {
+        margin: 0;
+      }
+      #canv {
+        position: fixed;
+        cursor: crosshair;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canv"></canvas>
+    <script>
+      let ctx = canv.getContext('2d');
+
+      const SIZE = 32;
+      let width = 12, height = 8;
+      let offX = 0, offY = 0;
+      let A = null;
+      let B = { x: 0, y: 0 };
+      let isDrawing = false;
+
+      function toCanvasX(x) {
+        return x * SIZE + offX;
+      }
+      function toCanvasY(y) {
+        return y * SIZE + offY;
+      }
+      function fromCanvasX(x) {
+        return Math.floor((x - offX) / SIZE);
+      }
+      function fromCanvasY(y) {
+        return Math.floor((y - offY) / SIZE);
+      }
+
+      function setPixel(x, y) {
+        ctx.fillRect(toCanvasX(x), toCanvasY(y), SIZE, SIZE);
+      }
+
+      function drawLine(x0, y0, x1, y1) {
+        const dx = Math.abs(x1 - x0);
+        const dy = Math.abs(y1 - y0);
+        const sx = (x0 < x1) ? 1 : -1;
+        const sy = (y0 < y1) ? 1 : -1;
+        let err = dx - dy;
+
+        while(true) {
+          setPixel(x0, y0);
+          
+          if (x0 === x1 && y0 === y1) {
+            break;
+          }
+
+          const e2 = 2*err;
+          if (e2 > -dy) { 
+            err -= dy; 
+            x0 += sx; 
+          }
+          if (e2 < dx) { 
+            err += dx; 
+            y0 += sy; 
+          }
+        }
+      }
+
+      function draw() {
+        // clear screen
+        ctx.clearRect(0, 0, canv.width, canv.height);
+
+        // draw grid
+        ctx.beginPath();
+        for (let x = 0; x <= width; x++) {
+          ctx.moveTo(toCanvasX(x), toCanvasY(0));
+          ctx.lineTo(toCanvasX(x), toCanvasY(height));
+        }
+        for (let y = 0; y <= height; y++) {
+          ctx.moveTo(toCanvasX(0),     toCanvasY(y));
+          ctx.lineTo(toCanvasX(width), toCanvasY(y));
+        }
+        ctx.strokeStyle = 'blue';
+        ctx.stroke();
+
+        // draw line
+        if (A) {
+          const x0 = fromCanvasX(A.x)
+          const y0 = fromCanvasY(A.y)
+          const x1 = fromCanvasX(B.x)
+          const y1 = fromCanvasY(B.y)
+
+          drawLine(x0, y0, x1, y1);
+
+          ctx.beginPath();
+          ctx.moveTo(toCanvasX(x0) + SIZE/2, toCanvasY(y0) + SIZE/2);
+          ctx.lineTo(toCanvasX(x1) + SIZE/2, toCanvasY(y1) + SIZE/2);
+          ctx.strokeStyle = 'violet';
+          ctx.stroke();
+        }
+
+        
+        requestAnimationFrame(draw);
+      }
+
+      // handle mouse events
+      window.addEventListener('mousedown', (e) => {
+        A = { x: e.clientX, y: e.clientY };
+        B = { x: A.x, y: A.y };
+        isDrawing = true;
+      });
+      window.addEventListener('mouseup', (e) => {
+        isDrawing = false;
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (isDrawing) {
+          B.x = e.clientX;
+          B.y = e.clientY;
+        }
+      });
+
+      // resize canvas on window resize
+      function resize() {
+        canv.width = window.innerWidth;
+        canv.height = window.innerHeight;
+
+        width = Math.floor(canv.width / SIZE);
+        height = Math.floor(canv.height / SIZE);
+
+        offX = Math.floor((canv.width - width * SIZE) / 2);
+        offY = Math.floor((canv.height - height * SIZE) / 2);
+
+        ctx = canv.getContext('2d');
+      }
+      window.addEventListener('resize', () => requestAnimationFrame(resize));
+      window.addEventListener('load', () => {
+        resize();
+        draw();
+      });
+    </script>
+  </body>
+</html>
